@@ -55,6 +55,18 @@ class ProductController
                     if ($product['price'] > $values[0] && $product['price'] < $values[1])
                         $res[] = $product;
                     break;
+                case 'size':
+                    foreach ($values as $item) {
+                        if (strcmp(strtolower($product['size']), strtolower($item)) == 0)
+                            $res[] = $product;
+                    }
+                    break;
+                case 'review':
+                    foreach ($values as $item) {
+                        if ($item == $product['product_id'])
+                            $res[] = $product;
+                    }
+                    break;
             }
         }
         return $res;
@@ -88,7 +100,11 @@ class ProductController
         $min_price = $_GET['min_price'] ?? "";
         $max_price = $_GET['max_price'] ?? "";
 
+        // Get product size
+        $sizes = $_GET['sizes'] ?? "";
 
+        // Get review
+        $review = $_GET['review'] ?? "";
 
         // Start filter
         $products_list = $products;
@@ -101,6 +117,15 @@ class ProductController
             $products_list = $this->filterProduct('price', [$min_price, $max_price], $products_list);
         }
 
+        if ($sizes) {
+            $sizes = explode(",", $sizes);
+            $products_list = $this->filterProduct('size', $sizes, $products_list);
+        }
+
+        if ($review) {
+            $product_id_reviews = $this->getProductIdByReview($review);
+            $products_list = $this->filterProduct('review', $product_id_reviews, $products_list);
+        }
 
         return $this->view(
             'products.index',

@@ -227,6 +227,69 @@
                 window.location.search = params.toString();
             });
 
+            $('.size_filter').on("change", function() {
+                // var sizes = document.querySelectorAll("input[type='checkbox']");
+
+                // console.log(sizes);
+                // var arr = [];
+
+                // sizes.forEach(size => {
+                //     if (size.checked) {
+                //         arr.push(size.value);
+                //     }
+                // });
+
+                var arr = [];
+
+                $("input[type='checkbox']").each(function() {
+                    if ($(this).prop('checked')) {
+                        arr.push($(this).val());
+                    }
+                });
+
+                const params = new URLSearchParams(window.location.search);
+                params.set("sizes", arr);
+                window.location.search = params.toString();
+
+            });
+
+            $('.review').click(function() {
+                var review = $(this).attr("id");
+                const params = new URLSearchParams(window.location.search);
+                params.set("review", review);
+                window.location.search = params.toString();
+            });
+
+            const colorData = $('#color_array').val().split(',');
+            console.log(colorData);
+            $('.color li').each(function(index) {
+                var color = colorData[index % colorData.length]; // Loop through the colorArray
+                $(this).css('background-color', color);
+                if (color === '#FFF') {
+                    $(this).css('border', '1px solid #000');
+                }
+
+            });
+
+            var clickedValues = [];
+
+            $('ul li').on('click', function() {
+                var value = $(this).attr('value');
+
+                // Check if the value exists in the clickedValues array
+                var index = clickedValues.indexOf(value);
+                if (index !== -1) {
+                    clickedValues.splice(index, 1); // Remove the value
+                } else {
+                    clickedValues.push(value); // Add the value
+                }
+
+                console.log("Clicked values array:", clickedValues);
+
+                const params = new URLSearchParams(window.location.search);
+                params.set("colors", clickedValues);
+                window.location.search = params.toString();
+            });
             
         });
     </script>
