@@ -85,6 +85,10 @@
     margin-left: 17px;
 }
 
+.option a{
+    text-decoration: none;
+}
+
 .holiday-sub-text {
     color: #FFF;
     font-family: Faustina;

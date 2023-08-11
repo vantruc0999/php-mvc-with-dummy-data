@@ -1,6 +1,3 @@
-<?php
-
-?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -14,6 +11,7 @@
     <link rel="stylesheet" href="./views/assets/css/header.css">
     <link rel="stylesheet" href="./views/assets/css/footer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 
 <body>
@@ -24,10 +22,10 @@
                 <h1>Plants Shop</h1>
             </div>
             <div class="search-container">
-                <form method="GET" action="?controller=product&action=index">
+                <form method="GET" action="?controller=home&action=index">
                     <div class="search">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" placeholder="search" name="search_product" value="<?php echo $search_product ?? '' ?>">
+                        <input type="text" placeholder="search" name="product_name" id="product_name" value="<?php echo $product_name ?? '' ?>">
                     </div>
                 </form>
 
@@ -42,7 +40,21 @@
                 <div class="option">
                     <img src="./views/assets/images/woman 1.png" alt="">
                 </div>
-                <span class="greeting">Hi,</span>
+                <?php if (!isset($_SESSION['user'])) { ?>
+                    <div>
+                        <a href="?controller=auth&action=login">Login</a>
+                    </div>
+                <?php } ?>
+                <?php if (isset($_SESSION['user'])) { ?>
+                    <div>
+                        <a href="?controller=auth&action=logout" style="text-decoration: none">Logout</a>
+                    </div>
+                    <span class="greeting">Hi, <?php
+                                                if (isset($_SESSION['user']))
+                                                    echo explode("@", $_SESSION['user']['email'])[0];
+                                                ?></span>
+                <?php } ?>
+
             </div>
         </div>
         <ul class="navbar">
@@ -98,17 +110,14 @@
                     <span class="stars-num"><?php echo $rate ?>/5</span>
                     <span class="reviews-num">(20 reviews)</span>
                 </div>
-                <div class="potter">
-                    <p class="potter-text">Potter Color :</p>
-                    <div class="potter-color">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="300" height="30" viewBox="0 0 230 20" fill="none">
-                            <circle cx="10" cy="10" r="10" fill="black" fill-opacity="0.7" />
-                            <circle cx="50" cy="10" r="10" fill="#FBD3C4" />
-                            <circle cx="90" cy="10" r="10" fill="#D17463" />
-
-                        </svg>
-                    </div>
-
+                <div class="product-color">
+                    <input type="hidden" value="<?php echo implode(",", $color_name_list) ?>" id="color_array">
+                    <p>Potter Color:</p>
+                    <ul class="color">
+                        <?php foreach ($color_name_list as $item) { ?>
+                            <li class="color_select"></li>
+                        <?php } ?>
+                    </ul>
                 </div>
                 <div class="bio">
                     <p class="plant">Plant Bio: </p>
@@ -190,6 +199,20 @@
         </div>
     </section>
     <?php require_once "./views/partials/footer.php" ?>
+    <script>
+        $(document).ready(function() {
+            const colorData = $('#color_array').val().split(',');
+            console.log(colorData);
+            $('.color li').each(function(index) {
+                var color = colorData[index % colorData.length]; // Loop through the colorArray
+                $(this).css('background-color', color);
+                if (color === '#FFF') {
+                    $(this).css('border', '1px solid #000');
+                }
+
+            });
+        });
+    </script>
 </body>
 
 </html>

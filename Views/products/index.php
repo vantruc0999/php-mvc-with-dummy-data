@@ -1,3 +1,11 @@
+<?php
+
+// if($product_color){
+//     echo '<pre>';
+//     var_dump($product_color);
+//     echo '</pre>';
+// }
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -21,12 +29,10 @@
                 <h1>Plants Shop</h1>
             </div>
             <div class="search-container">
-
                 <div class="search">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" placeholder="search" name="product_name" id="product_name" value="<?php echo $product_name ?? '' ?>">
+                    <input type="text" placeholder="search" id="product_name" value="<?php if (isset($_GET['product_name'])) echo $product_name; ?>">
                 </div>
-
             </div>
             <div class="header-icons">
                 <div class="option">
@@ -38,7 +44,21 @@
                 <div class="option">
                     <img src="./views/assets/images/woman 1.png" alt="">
                 </div>
-                <span class="greeting">Hi,</span>
+                <?php if (!isset($_SESSION['user'])) { ?>
+                    <div>
+                        <a href="?controller=auth&action=login">Login</a>
+                    </div>
+                <?php } ?>
+                <?php if (isset($_SESSION['user'])) { ?>
+                    <div>
+                        <a href="?controller=auth&action=logout" style="text-decoration: none">Logout</a>
+                    </div>
+                    <span class="greeting">Hi, <?php
+                        if (isset($_SESSION['user']))
+                            echo explode("@", $_SESSION['user']['email'])[0];
+                        ?></span>
+                <?php } ?>
+
             </div>
         </div>
         <ul class="navbar">
@@ -78,10 +98,13 @@
             <div class="product-left">
                 <div class="product-color">
                     <input type="hidden" value="<?php echo implode(",", $colors_name) ?>" id="color_array">
+                    <input type="hidden" value="<?php echo $_GET['color'] ?? ""; ?>" id="color_url">
+                    <input type="hidden" value="<?php echo $_GET['review'] ?? ""; ?>" id="review_star">
                     <p>Potter Color:</p>
                     <ul class="color">
-                        <?php foreach ($colors_name as $item) { ?>
-                            <li value="<?php echo $item ?>" class="color_select"></li>
+                        <?php
+                        foreach ($colors_name as $item) { ?>
+                            <li value="<?php echo $item ?>"></li>
                         <?php } ?>
                     </ul>
                 </div>
@@ -90,23 +113,23 @@
                     <div class="size-container">
                         <div class="size">
                             <input type="checkbox" class="size_filter" value="large" id="size_large" <?php
-                                                                                                        if (isset($_GET['sizes']) && str_contains($_GET['sizes'], 'large'))
-                                                                                                            echo 'checked';
-                                                                                                        ?>>
+                                if (isset($_GET['sizes']) && str_contains($_GET['sizes'], 'large'))
+                                    echo 'checked';
+                                ?>>
                             <label>Large</label>
                         </div>
                         <div class="size ">
                             <input type="checkbox" class="size_filter" value="medium" id="size_medium" <?php
-                                                                                                        if (isset($_GET['sizes']) && str_contains($_GET['sizes'], 'medium'))
-                                                                                                            echo 'checked';
-                                                                                                        ?>>
+                                if (isset($_GET['sizes']) && str_contains($_GET['sizes'], 'medium'))
+                                    echo 'checked';
+                                ?>>
                             <label>Medium</label>
                         </div>
                         <div class="size">
                             <input type="checkbox" class="size_filter" value="small" id="size_small" <?php
-                                                                                                        if (isset($_GET['sizes']) && str_contains($_GET['sizes'], 'small'))
-                                                                                                            echo 'checked';
-                                                                                                        ?>>
+                                if (isset($_GET['sizes']) && str_contains($_GET['sizes'], 'small'))
+                                    echo 'checked';
+                                ?>>
                             <label>Small</label>
                         </div>
                     </div>
@@ -212,14 +235,16 @@
     <?php require_once "./views/partials/footer.php"  ?>
     <script>
         $(document).ready(function() {
+            // Lấy giá trị từ thanh search product để đưa lên url
             $('#product_name').on("change", function() {
                 var query = $(this).val();
                 const params = new URLSearchParams(window.location.search);
                 params.set("product_name", query);
                 window.location.search = params.toString();
-                localStorage.setItem("product_name", query);
+                // localStorage.setItem("product_name", query);
             });
 
+            // Lấy giá trị khoản tiền để set lên url
             $('#btn-price').click(function() {
                 const params = new URLSearchParams(window.location.search);
                 params.set("min_price", $('#min_price').val());
@@ -227,6 +252,7 @@
                 window.location.search = params.toString();
             });
 
+            // Lấy giá trị size để set lên url
             $('.size_filter').on("change", function() {
                 // var sizes = document.querySelectorAll("input[type='checkbox']");
 
@@ -253,6 +279,7 @@
 
             });
 
+            // Lấy giá trị review để set lên url
             $('.review').click(function() {
                 var review = $(this).attr("id");
                 const params = new URLSearchParams(window.location.search);
@@ -260,8 +287,9 @@
                 window.location.search = params.toString();
             });
 
+            //Lấy chuỗi các tên màu từ PHP để set css cho thẻ ul li tags
             const colorData = $('#color_array').val().split(',');
-            console.log(colorData);
+            // console.log(colorData);
             $('.color li').each(function(index) {
                 var color = colorData[index % colorData.length]; // Loop through the colorArray
                 $(this).css('background-color', color);
@@ -271,26 +299,46 @@
 
             });
 
-            var clickedValues = [];
-
+            // Lấy giá trị màu để set lên url
             $('ul li').on('click', function() {
                 var value = $(this).attr('value');
-
-                // Check if the value exists in the clickedValues array
-                var index = clickedValues.indexOf(value);
-                if (index !== -1) {
-                    clickedValues.splice(index, 1); // Remove the value
-                } else {
-                    clickedValues.push(value); // Add the value
-                }
-
-                console.log("Clicked values array:", clickedValues);
+                // console.log("Clicked values array:", value);
 
                 const params = new URLSearchParams(window.location.search);
-                params.set("colors", clickedValues);
+                params.set("color", value);
                 window.location.search = params.toString();
+            }); 
+
+            // Lấy giá trị màu từ url
+            const color_url = $('#color_url').val();
+
+            // Nếu màu nào được chọn thì css to hơn màu khác 
+            $(".color li").each(function() {
+                var value = $(this).attr("value");
+
+                if (value === color_url) {
+                    $(this).css('border', '2px solid black');
+                    $(this).css('width', '30px');
+                    $(this).css('height', '30px');
+                }
+
+                // Print the value to the console
+                console.log("Value:", value);
             });
-            
+
+            // Lấy giá trị review từ url
+            const review_star_url = $('#review_star').val();
+            console.log(review_star_url);
+
+            // Review star nào được chọn thì css to hơn các review kahsc
+            for (let i = 1; i <= 5; i++) {
+                const review_star_img = $('.review#' + i).attr("id");
+
+                if (review_star_img == review_star_url) {
+                    $('.review#' + i + ' img').css('width', '25px');
+                }
+            }
+
         });
     </script>
 </body>

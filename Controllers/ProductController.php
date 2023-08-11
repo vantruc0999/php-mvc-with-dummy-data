@@ -1,51 +1,131 @@
+<!-- Khi người dùng vào "Categories" trên UI thì controller này sẽ được gọi với hàm mặc định là index-->
 <?php
 
 class ProductController
 {
-
-    private $productModel, $categoryModel;
+    private $productModel, $categoryModel, $reviewModel, $colorModel, $colorProductModel;
 
     public function __construct()
     {
         $this->productModel = new ProductModel;
+        $this->categoryModel = new CategoryModel;
+        $this->reviewModel = new ReviewModel;
+        $this->colorModel = new ColorModel;
+        $this->colorProductModel = new ColorProductModel;
     }
 
+    // Sử dụng khái niệm biến biến để biến key của một mảng thành một biến mới với giá trị đã được gán
     private function view($viewPath, array $data = [])
     {
         foreach ($data as $key => $value) {
             $$key = $value;
         }
+        //Thay vì truyền vào biến $viewpath = "Views/tên_folder.php/tênfile.php" thì đổi kiểu này cho giống laravel 
         return require('Views' . '/' . str_replace('.', '/', $viewPath) . '.php');
     }
 
+    // Lấy danh sách các id của product bằng điểm review (1->5)
     private function getProductIdByReview($review)
     {
-        // global $reviews;
-        // $reviews_list = array();
-        // foreach ($reviews as $item) {
-        //     if ($item['rate'] == $review) {
-        //         $reviews_list[] = $item['product_id'];
-        //     }
-        // }
-        // return $reviews_list;
-
-        $reviews = new ReviewModel;
-        $reviews_list = $reviews->getAllProductReviews();
+        $reviews_list = $this->reviewModel->getAllProductReviews();
         $product_id_list = array();
 
-        foreach($reviews_list as $item){
-            if($item['rate'] == $review){
+        foreach ($reviews_list as $item) {
+            if ($item['rate'] == $review) {
                 $product_id_list[] = $item['product_id'];
             }
         }
-        
+
         return $product_id_list;
     }
 
-    private function filterProduct($key, $values, $arr)
+    // Lấy danh sách id sản phẩm có màu là tham số $color(Mã màu người dùng cần lọc)
+    private function getProductByColorName($color)
+    {
+        $color_id = "";
+        $product_id_list = array();
+        // Lấy data trong table colors_products_list
+        $colors_products_list = $this->colorProductModel->getAllColorsProducts();
+        // Lấy toàn bộ màu có trong data/colors
+        $colors = $this->colorModel->getAllColors();
+
+        // Lấy ra danh sách id màu theo tên màu là tham số $color
+        foreach ($colors as $item) {
+            if (strcmp(strtolower($item['color_name']), strtolower($color)) == 0) {
+                $color_id = $item['id'];
+            }
+        }
+
+        /* 
+            Khi đã có mã màu ứng với màu người dùng cần thì ta có thể lấy ra những sản phẩm
+            có id ứng với màu đó qua bảng trung gian colors_products_data 
+         */
+        foreach ($colors_products_list as $each) {
+            if ($each['color_id'] == $color_id) {
+                $product_id_list[] = $each['product_id'];
+            }
+        }
+
+        return  $product_id_list;
+    }
+
+    //Lấy tên tất cả màu có trong data để đổ ra trang sản phẩm
+    private function getColorName($colors_list)
+    {
+        $colors_name = array();
+        foreach ($colors_list as $item) {
+            $colors_name[] = $item['color_name'];
+        }
+        return $colors_name;
+    }
+
+    // Trả về tên màu theo mã màu hàm này được dùng để đỗ màu ra trong trang danh sách sản phẩm
+    private function getColorNameByColorId($color_id)
+    {
+        $colors = $this->colorModel->getAllColors();
+        foreach ($colors as $color) {
+            if ($color['id'] == $color_id) {
+                return $color['color_name'];
+            }
+        }
+    }
+
+    // Hàm này được dùng trong chi tiết sản phẩm để lấy ra màu của sản phẩm
+    private function getColorNamebyProductId($product_id)
     {
         $res = array();
-        foreach ($arr as $product) {
+        $color_id_list = array();
+        $colors_products = $this->colorProductModel->getAllColorsProducts();
+
+        foreach ($colors_products as $item) {
+            if ($item['product_id'] == $product_id)
+                $color_id_list[] = $item['color_id'];
+        }
+
+        foreach ($color_id_list as $item) {
+            $res[] = $this->getColorNameByColorId($item);
+        }
+
+        return $res;
+    }
+
+    private function getReviewsByProductId($product_id)
+    {
+        $reviews_list = $this->reviewModel->getAllProductReviews();
+
+        foreach ($reviews_list as $item) {
+            if ($item['product_id'] == $product_id)
+                $rate = $item['rate'];
+        }
+
+        return $rate;
+    }
+
+    // Hàm để xử lý lọc sản phẩm
+    private function filterProduct($key, $values, $products_list)
+    {
+        $res = array();
+        foreach ($products_list as $product) {
             switch ($key) {
                 case 'product_name':
                     if (str_contains(strtolower($product['name']), strtolower($values[0])))
@@ -67,28 +147,25 @@ class ProductController
                             $res[] = $product;
                     }
                     break;
+                case 'color':
+                    $products_color = $this->getProductByColorName($values[0]);
+                    foreach ($products_color as $item) {
+                        if ($product['product_id'] == $item) {
+                            $res[] = $product;
+                        }
+                    }
+                    break;
             }
         }
         return $res;
     }
 
-    private function getColorName($colors_list){
-        $colors_name = array();
-        foreach($colors_list as $item){
-            $colors_name[] = $item['color_name'];
-        }
-        return $colors_name;
-    }
-
     public function index()
     {
-        $this->categoryModel = new CategoryModel;
-
         $products = $this->productModel->getAllProducts();
         $categories = $this->categoryModel->getAllCategories();
 
-        $colors = new ColorModel;
-        $colors_list = $colors->getAllColors();
+        $colors_list = $this->colorModel->getAllColors();
         $colors_name = $this->getColorName($colors_list);
 
         $products_list = array();
@@ -105,6 +182,10 @@ class ProductController
 
         // Get review
         $review = $_GET['review'] ?? "";
+
+        // Get color
+
+        $color = $_GET['color'] ?? "";
 
         // Start filter
         $products_list = $products;
@@ -127,6 +208,12 @@ class ProductController
             $products_list = $this->filterProduct('review', $product_id_reviews, $products_list);
         }
 
+        if ($color) {
+            $products_list = $this->filterProduct('color', [$color], $products_list);
+        }
+
+        // $product_color = $this->getProductByColorName($color);
+
         return $this->view(
             'products.index',
             [
@@ -138,25 +225,30 @@ class ProductController
         );
     }
 
+
+    // Lấy chi tiết sản phẩm
     public function show()
     {
-        $product_id = $_GET['pid'];
+        $product_id = $_GET['pid'] ?? "";
 
         $products = $this->productModel->getAllProducts();
-
-        $this->productModel = new ProductModel;
-        $product_detail = $this->productModel->getDetailProduct($product_id);
-
-        $this->categoryModel = new CategoryModel;
         $categories = $this->categoryModel->getAllCategories();
 
-        $reviews = new ReviewModel;
-        $reviews_list = $reviews->getAllProductReviews();
-
-        foreach($reviews_list as $item){
-            if($item['product_id'] == $product_id)
-                $rate = $item['rate'];
+        if (!$product_id) {
+            return $this->view(
+                'index',
+                [
+                    'products_list' => $products,
+                    'categories_list' => $categories,
+                ]
+            );
         }
+
+        $product_detail = $this->productModel->getDetailProduct($product_id);
+
+        $rate = $this->getReviewsByProductId($product_id);
+
+        $color_list = $this->getColorNamebyProductId($product_id);
 
         return $this->view(
             'products.detail-page',
@@ -165,6 +257,7 @@ class ProductController
                 'categories' => $categories,
                 'products_list' => $products,
                 'rate' => $rate,
+                'color_name_list' => $color_list,
             ]
         );
     }
